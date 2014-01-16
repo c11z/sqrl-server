@@ -1,5 +1,9 @@
 from twython import TwythonStreamer
+<<<<<<< HEAD
 from secret import Secret
+=======
+
+>>>>>>> 25b37ba4c19bca5167263629a7d9f91da61ee91e
 
 class LinkStreamer(TwythonStreamer):
     """docstring for LinkStreamer"""
