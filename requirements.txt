@@ -1,1 +1,6 @@
 flask
+flask-restful
+json
+requests
+twython
+pysqlite

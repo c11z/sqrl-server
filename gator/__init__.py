@@ -1,5 +1,6 @@
-from flask import Flask, url_for
 import os
+
+from flask import Flask, url_for
 
 gator = Flask(__name__)
 
@@ -12,4 +13,7 @@ gator.jinja_env.globals['static'] = (
     lambda filename: url_for('static', filename = filename)
 )
 
-from gator import views
+from gator import api
+from gator import db
+from gator import link_streamer
+from gator import secret

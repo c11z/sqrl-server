@@ -3,3 +3,5 @@
 *.pyc
 .sass-cache
 *.gitattributes
+*.sqlite
+gator/secret.py
