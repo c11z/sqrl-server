@@ -1,6 +1,7 @@
 from twython import TwythonStreamer
 from secret import Secret
 
+
 class LinkStreamer(TwythonStreamer):
     """docstring for LinkStreamer"""
     def on_success(self, data):
