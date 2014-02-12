@@ -30,15 +30,15 @@ class LinkStreamer(TwythonStreamer):
                     url = l['expanded_url']
                     link = Link.query.filter_by(userId=self.user_id, url=url).first()
                     if link and (tweet not in link.tweets):
-                        link.tweets.add(tweet)
+                        link.tweets.append(tweet)
                     else:
-                        link = Link(url, l['url'], self.user_id, [tweet]) 
-                        db.session.add(link)
+                        link = Link(url, l['url'], self.user_id, [tweet])
                     try:
+                        db.session.add(link)
                         db.session.commit()
-                    except IntegrityError:
+                    except IntegrityError :
                         db.session.rollback()
-                        logger.error('IntegrityError {0} -> ')
+                        logger.error('IntegrityError {0}'.format(link))
             
 
     # def on_error(self, status_code, data):
