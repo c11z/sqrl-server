@@ -29,8 +29,7 @@ class LinkStreamer(TwythonStreamer):
                 for l in data['entities']['urls']:
                     url = l['expanded_url']
                     link = Link.query.filter_by(userId=self.user_id, url=url).first()
-                    if link:
-                        for 
+                    if link and (tweet not in link.tweets):
                         link.tweets.add(tweet)
                     else:
                         link = Link(url, l['url'], self.user_id, [tweet]) 
