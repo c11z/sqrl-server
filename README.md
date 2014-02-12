@@ -20,9 +20,13 @@ ACCESS_TOKEN_SECRET = 'XXX'
 
 3) Install mysql and setup database with uri as in secret.py
 
-```
-yum install mysql
-mysqld
+3) get python and pip and virtualenv, go ahead and run ```pip install -r requirments.txt```
+
+4) Go into mysql and create the database name then launch python repl and:
+
+``` python
+>>>> from gator.db import db
+>>>> db.create_all()
 ```
 
-4)
+If that works then your database should be initialized with the correct tables according to your models.

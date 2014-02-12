@@ -1,11 +1,11 @@
-import secret
+import secret as s
 from gator import gator
 from flask.ext.sqlalchemy import SQLAlchemy
 from datetime import datetime
 from dateutil import parser
 from marshmallow import Serializer, fields
 
-gator.config['SQLALCHEMY_DATABASE_URI'] = 'mysql://root:@localhost:3306/gator'
+gator.config['SQLALCHEMY_DATABASE_URI'] = s.DATABASE_URI
 db = SQLAlchemy(gator)
 
 tweet_link_conn = db.Table('TweetLinkConn',
