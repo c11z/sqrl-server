@@ -1,6 +1,9 @@
 flask
 flask-restful
-json
+flask-sqlalchemy
+sqlalchemy
 requests
 twython
-pysqlite
+python-dateutil
+mysql-python
+marshmallow

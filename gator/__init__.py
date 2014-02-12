@@ -12,8 +12,9 @@ gator.config['FREEZER_DESTINATION'] = os.path.dirname(os.path.abspath(__file__))
 gator.jinja_env.globals['static'] = (
     lambda filename: url_for('static', filename = filename)
 )
-
+import logging
+logging.basicConfig(filename='logs/api.log',level=logging.DEBUG)
+logging.info("Starting up Server!")
 from gator import api
 from gator import db
-from gator import link_streamer
 from gator import secret

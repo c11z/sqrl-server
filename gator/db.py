@@ -1,139 +1,97 @@
-import sqlite3
-
+import secret
 from gator import gator
-from flask import g
+from flask.ext.sqlalchemy import SQLAlchemy
+from datetime import datetime
+from dateutil import parser
+from marshmallow import Serializer, fields
 
-def get_db():
-    db = getattr(g, '_database', None)
-    if db is None:
-        db = g._database = sqlite3.connect('LinkBundle.sqlite')
-        db.row_factory = sqlite3.Row
-    return db
+gator.config['SQLALCHEMY_DATABASE_URI'] = 'mysql://root:@localhost:3306/gator'
+db = SQLAlchemy(gator)
 
-@gator.teardown_appcontext
-def close_connection(exception):
-    db = getattr(g, '_database', None)
-    if db is not None:
-        db.close()
+tweet_link_conn = db.Table('TweetLinkConn',
+                           db.Column('LinkId', db.BigInteger, db.ForeignKey('Link.LinkId')),
+                           db.Column('TweetId', db.BigInteger, db.ForeignKey('Tweet.TweetId')))  
 
-def query_db(query, args=(), one=False):
-    cur = get_db().execute(query, args)
-    rv = cur.fetchall()
-    cur.close()
-    return (rv[0] if rv else None) if one else rv        
+##### Models #####
 
-def init_db():
-    with gator.app_context():
-        db = get_db()
-        with gator.open_resource('schema.sql', mode='r') as f:
-            db.cursor().executescript(f.read())
-        db.commit()
+class Link(db.Model):
+    __tablename__ = 'Link'
+    __table_args__ = (db.UniqueConstraint('Url', 'UserId'), {})
+    linkId = db.Column('LinkId', db.BigInteger, primary_key=True, autoincrement=True)
+    url = db.Column('Url', db.String(255), index=True)
+    twitterUrl = db.Column('TwitterUrl', db.String(255))
+    domain = db.Column('Domain', db.String(255), nullable=True)
+    title = db.Column('Title', db.String(255), nullable=True)
+    heroImageUrl = db.Column('HeroImageUrl', db.String(1024), nullable=True)
+    excerpt = db.Column('Excerpt', db.Text, nullable=True)
+    createdAt = db.Column('CreatedAt', db.DateTime, index=True)
+    # user_id is twitter id for the user subscribing to the service
+    userId = db.Column('UserId', db.BigInteger, index=True)
+    tweets = db.relationship('Tweet', secondary=tweet_link_conn,
+        backref=db.backref('links', lazy='dynamic'))
 
-# Twitter data response
-# {
-#   "coordinates": null,
-#   "favorited": false,
-#   "truncated": false,
-#   "created_at": "Wed Jun 06 20:07:10 +0000 2012",
-#   "id_str": "210462857140252672",
-#   "entities": {
-#     "urls": [
-#       {
-#         "expanded_url": "https://dev.twitter.com/terms/display-guidelines",
-#         "url": "https://t.co/Ed4omjYs",
-#         "indices": [
-#           76,
-#           97
-#         ],
-#         "display_url": "dev.twitter.com/terms/display-\u2026"
-#       }
-#     ],
-#     "hashtags": [
-#       {
-#         "text": "Twitterbird",
-#         "indices": [
-#           19,
-#           31
-#         ]
-#       }
-#     ],
-#     "user_mentions": [
- 
-#     ]
-#   },
-#   "in_reply_to_user_id_str": null,
-#   "contributors": [
-#     14927800
-#   ],
-#   "text": "Along with our new #Twitterbird, we've also updated our Display Guidelines: https://t.co/Ed4omjYs  ^JC",
-#   "retweet_count": 66,
-#   "in_reply_to_status_id_str": null,
-#   "id": 210462857140252672,
-#   "geo": null,
-#   "retweeted": true,
-#   "possibly_sensitive": false,
-#   "in_reply_to_user_id": null,
-#   "place": null,
-#   "user": {
-#     "profile_sidebar_fill_color": "DDEEF6",
-#     "profile_sidebar_border_color": "C0DEED",
-#     "profile_background_tile": false,
-#     "name": "Twitter API",
-#     "profile_image_url": "http://a0.twimg.com/profile_images/2284174872/7df3h38zabcvjylnyfe3_normal.png",
-#     "created_at": "Wed May 23 06:01:13 +0000 2007",
-#     "location": "San Francisco, CA",
-#     "follow_request_sent": false,
-#     "profile_link_color": "0084B4",
-#     "is_translator": false,
-#     "id_str": "6253282",
-#     "entities": {
-#       "url": {
-#         "urls": [
-#           {
-#             "expanded_url": null,
-#             "url": "http://dev.twitter.com",
-#             "indices": [
-#               0,
-#               22
-#             ]
-#           }
-#         ]
-#       },
-#       "description": {
-#         "urls": [
- 
-#         ]
-#       }
-#     },
-#     "default_profile": true,
-#     "contributors_enabled": true,
-#     "favourites_count": 24,
-#     "url": "http://dev.twitter.com",
-#     "profile_image_url_https": "https://si0.twimg.com/profile_images/2284174872/7df3h38zabcvjylnyfe3_normal.png",
-#     "utc_offset": -28800,
-#     "id": 6253282,
-#     "profile_use_background_image": true,
-#     "listed_count": 10774,
-#     "profile_text_color": "333333",
-#     "lang": "en",
-#     "followers_count": 1212963,
-#     "protected": false,
-#     "notifications": null,
-#     "profile_background_image_url_https": "https://si0.twimg.com/images/themes/theme1/bg.png",
-#     "profile_background_color": "C0DEED",
-#     "verified": true,
-#     "geo_enabled": true,
-#     "time_zone": "Pacific Time (US & Canada)",
-#     "description": "The Real Twitter API. I tweet about API changes, service issues and happily answer questions about Twitter and our API. Don't get an answer? It's on my website.",
-#     "default_profile_image": false,
-#     "profile_background_image_url": "http://a0.twimg.com/images/themes/theme1/bg.png",
-#     "statuses_count": 3333,
-#     "friends_count": 31,
-#     "following": true,
-#     "show_all_inline_media": false,
-#     "screen_name": "twitterapi"
-#   },
-#   "in_reply_to_screen_name": null,
-#   "source": "web",
-#   "in_reply_to_status_id": null
-# }
+    def __init__(self, url, twitter_url, user_id, tweets):
+        self.url = url
+        self.twitterUrl = twitter_url
+        self.userId = user_id
+        self.createdAt = datetime.utcnow()
+        self.tweets = tweets
+        
+    # def __repr__(self):
+    #     return 'Link {0}:{1}'.format(self.url, self.user_id)
+
+class Tweet(db.Model):
+    __tablename__ = 'Tweet'
+    tweetId = db.Column('TweetId', db.BigInteger, primary_key=True)
+    # user information for the tweeting user
+    tweetUserId = db.Column('TweetUserId', db.BigInteger)
+    screenName = db.Column('ScreenName', db.String(64))
+    name = db.Column('Name', db.String(64))
+    profileImageUrl = db.Column('ProfileImageUrl', db.String(255))
+    text = db.Column('Text', db.Text)
+    # created date of the tweet
+    createdAt = db.Column('CreatedAt', db.DateTime)
+
+    def __init__(self, tweet_id, tweet_user_id, screen_name, name, 
+                 profile_image_url, text, created_at):
+        self.tweetId = tweet_id
+        self.tweetUserId = tweet_user_id
+        self.screenName = screen_name
+        self.name = name
+        self.profileImage_Url = profile_image_url
+        self.text = text
+        self.createdAt = parser.parse(created_at)
+        # self.created_at = parser.parse(created_at, '%a %b %d %H:%M:%S %z %Y')
+
+    # def __repr__(self):
+    #     return 'Tweet {0}:{1}'.format(self.tweet_id, self.screen_name)
+      
+##### Serializers #####
+
+class TweetSerializer(Serializer):
+    tweetId = fields.Integer()
+    tweetUserId = fields.Integer()
+    screenName = fields.String()
+    name = fields.String()
+    profileImageUrl = fields.String()
+    text = fields.String()
+    createdAt = fields.DateTime()
+
+class LinkSerializer(Serializer):
+    linkId = fields.Integer()
+    url = fields.String()
+    twitterUrl = fields.String()
+    domain = fields.String()
+    heroImageUrl = fields.String()
+    excerpt = fields.String()
+    createdAt = fields.DateTime()
+    userId = fields.Integer()
+    tweets = fields.Nested(TweetSerializer, many=True)
+
+
+
+
+
+
+
+

@@ -4,4 +4,6 @@
 .sass-cache
 *.gitattributes
 *.sqlite
+venv
+logs
 gator/secret.py

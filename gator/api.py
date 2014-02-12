@@ -1,7 +1,10 @@
+import logging
+import subprocess
 from gator import gator
-from flask import render_template
+from gator.db import db, Link, Tweet, LinkSerializer
+from flask import render_template, abort
 from flask.ext.restful import Resource, Api
-from secret import Secret
+import json
 
 api = Api(gator)
 
@@ -9,55 +12,41 @@ api = Api(gator)
 def index():
     return render_template('index.html')
 
-s = Secret()
-
-link_bundle_list = [
-{
-    'expandedUrl': 'http://google.com',
-    'twitterUrl': 'http://t.co/KJHSKDJHF',
-    'twitterUserId': 131886354,
-    'createdAt': '2014-12-00 12:00:00',
-    'screenName': 'corydominguez',
-    'name': 'Cory Dominguez',
-    'profileImageUrl': 'http://a0.twimg.com/profile_images/2284174872/7df3h38zabcvjylnyfe3_normal.png',
-    'tweetContent': 'This is a tweet',
-},
-{
-    'expandedUrl': 'http://google.com',
-    'twitterUrl': 'http://t.co/KJHSKDJHF',
-    'twitterUserId': 131886354,
-    'createdAt': '2014-12-00 12:00:00',
-    'screenName': 'corydominguez',
-    'name': 'Cory Dominguez',
-    'profileImageUrl': 'http://a0.twimg.com/profile_images/2284174872/7df3h38zabcvjylnyfe3_normal.png',
-    'tweetContent': 'This is a tweet',  
-},
-{
-    'expandedUrl': 'http://google.com',
-    'twitterUrl': 'http://t.co/KJHSKDJHF',
-    'twitterUserId': 131886354,
-    'createdAt': '2014-12-00 12:00:00',
-    'screenName': 'corydominguez',
-    'name': 'Cory Dominguez',
-    'profileImageUrl': 'http://a0.twimg.com/profile_images/2284174872/7df3h38zabcvjylnyfe3_normal.png',
-    'tweetContent': 'This is a tweet',
-}]     
-
 class LinkBundle(Resource):
-    def get(self, twitter_user_id, date):
-        if not twitter_user_id or not date:
-            abort(404, message='Please include twitter id and date')
-        return link_bundle_list
+    def get(self, user_id, date):
+        logging.info('calling linkbundle')
+        links = Link.query.filter(Link.userId == user_id, Link.createdAt > date).all()
+        logging.info("{0}".format(links))
+        serialized = LinkSerializer(links, many=True)
+        # if not user_id or not date:
+            # abort(404, message='Please include twitter id and date')
+        return serialized.data
 
+class StartStream(Resource):
+    def get(self, user_id):
+        s = Secret()
+        logging.info('Calling Start Stream for UserId:{0}'.format(user_id))
+        subprocess.Popen(['python', 'streamer.py', '&'])
+        return True
 
-def startStream():
-    stream = LinkStreamer(s.CONSUMER_KEY, s.CONSUMER_SECRET, 
-                          s.ACCESS_TOKEN, s.ACCESS_TOKEN_SECRET)
-    stream.user(_with='followings')
+class StopStream(Resource):
+    def get(self):
+        logging.info('Calling Stop Stream')
+        pid = subprocess.call(["ps aux | awk '/[s]treamer.py/{print $2}'"], shell=True)
+        subprocess.call(['kill', pid], shell=True)
+        return str(pid)
+
+class CheckStream(Resource):
+    def get(self):
+        logging.info('Calling Check Stream')
 
 
 ##
 ## Actually setup the Api resource routing here
 ##
 api.add_resource(LinkBundle, 
-                 '/linkbundle/<int:twitter_user_id>/<string:date>')
+                 '/linkbundle/<int:user_id>/<string:date>')
+# operating stream is not really ready from the app yet
+# api.add_resource(StartStream, '/stream/start/<int:user_id>')
+# api.add_resource(StopStream, '/stream/stop/')
+# api.add_resource(CheckStream, '/stream/check')
