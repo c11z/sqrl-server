@@ -52,13 +52,19 @@ class LinkStreamer(TwythonStreamer):
         # Uncomment the next line!
         # self.disconnect()
     def getPageInfo(self, url):
-        title = ''
-        description = ''
         try:
             resp = requests.get(url)
             soup = BeautifulSoup(resp.text)
-            title = soup.find('title').text
-            description = soup.find('meta', {'name':'description'})['content']
+            title = soup.find('title')
+            if title is not None:
+                title = title.text
+            else:
+                title = ''
+            description = soup.find('meta', {'name':'description'})
+            if description is not None:
+                description = description['content']
+            else:
+                description = ''
         except requests.exceptions.ConnectionError:
             logging.error('ConnectionError for url {0}'.format(url))
         return (title, description)
