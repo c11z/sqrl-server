@@ -1,8 +1,10 @@
 import logging
 import argparse
+import requests
 import gator.secret as s
 from twython import TwythonStreamer
 from gator.db import db, Link, Tweet
+from BeautifulSoup import BeautifulSoup
 
 class LinkStreamer(TwythonStreamer):
     """docstring for LinkStreamer"""
@@ -33,10 +35,13 @@ class LinkStreamer(TwythonStreamer):
                         link.tweets.append(tweet)
                     else:
                         link = Link(url, l['url'], self.user_id, [tweet])
+                        title, description = self.getPageInfo(url)
+                        link.title = title
+                        link.description = description
                     try:
                         db.session.add(link)
                         db.session.commit()
-                    except IntegrityError :
+                    except IntegrityError:
                         db.session.rollback()
                         logger.error('IntegrityError {0}'.format(link))
             
@@ -46,6 +51,18 @@ class LinkStreamer(TwythonStreamer):
         # Want to stop trying to get data because of the error?
         # Uncomment the next line!
         # self.disconnect()
+    def getPageInfo(self, url):
+        title = ''
+        description = ''
+        try:
+            resp = requests.get(url)
+            soup = BeautifulSoup(resp.text)
+            title = soup.find('title').text
+            description = soup.find('meta', {'name':'description'})['content']
+        except requests.exceptions.ConnectionError:
+            logging.error('ConnectionError for url {0}'.format(url))
+        return (title, description)
+
 
 
 if __name__ == '__main__':
