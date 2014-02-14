@@ -59,7 +59,7 @@ class Tweet(db.Model):
         self.tweetUserId = tweet_user_id
         self.screenName = screen_name
         self.name = name
-        self.profileImage_Url = profile_image_url
+        self.profileImageUrl = profile_image_url
         self.text = text
         self.createdAt = parser.parse(created_at)
         # self.created_at = parser.parse(created_at, '%a %b %d %H:%M:%S %z %Y')
@@ -76,7 +76,6 @@ class TweetSerializer(Serializer):
     name = fields.String()
     profileImageUrl = fields.String()
     text = fields.String()
-    createdAt = fields.DateTime()
 
 class LinkSerializer(Serializer):
     linkId = fields.Integer()
@@ -88,7 +87,6 @@ class LinkSerializer(Serializer):
     heroImageUrl = fields.String()
     excerpt = fields.String()
     createdAt = fields.DateTime()
-    userId = fields.Integer()
     tweets = fields.Nested(TweetSerializer, many=True)
 
 

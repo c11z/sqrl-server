@@ -2,9 +2,10 @@ import logging
 import argparse
 import requests
 import gator.secret as s
-from twython import TwythonStreamer
 from gator.db import db, Link, Tweet
+from twython import TwythonStreamer
 from BeautifulSoup import BeautifulSoup
+from datetime import datetime
 
 class LinkStreamer(TwythonStreamer):
     """docstring for LinkStreamer"""
@@ -33,6 +34,7 @@ class LinkStreamer(TwythonStreamer):
                     link = Link.query.filter_by(userId=self.user_id, url=url).first()
                     if link and (tweet not in link.tweets):
                         link.tweets.append(tweet)
+                        link.createdAt = datetime.utcnow()
                     else:
                         link = Link(url, l['url'], self.user_id, [tweet])
                         title, description = self.getPageInfo(url)
