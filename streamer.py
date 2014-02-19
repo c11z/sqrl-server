@@ -20,7 +20,6 @@ class LinkStreamer(TwythonStreamer):
                                            chunk_size=1)
 
     def on_success(self, data):
-        # logging.info('userId: {0} data: {1}'.format(self.user_id, data))
         if data.get('id') is not None:
             logging.info('Tweet Id: {0}'.format(data.get('id_str')))
             if len(data.get('entities').get('urls')) > 0:
@@ -35,17 +34,17 @@ class LinkStreamer(TwythonStreamer):
                     if link and (tweet not in link.tweets):
                         link.tweets.append(tweet)
                         link.createdAt = datetime.utcnow()
-                    else:
-                        link = Link(url, l['url'], self.user_id, [tweet])
-                        title, description = self.getPageInfo(url)
-                        link.title = title
-                        link.description = description
-                    try:
                         db.session.add(link)
-                        db.session.commit()
-                    except IntegrityError:
-                        db.session.rollback()
-                        logger.error('IntegrityError {0}'.format(link))
+                    else:
+                        link = self.getPageInfo(url, l['url'], self.user_id, [tweet])
+                        # if title ends up being None then the Link has failed
+                        if link:
+                            db.session.add(link)
+                try:
+                    db.session.commit()
+                except IntegrityError:
+                    db.session.rollback()
+                    logger.error('IntegrityError {0}'.format(link))
             
 
     # def on_error(self, status_code, data):
@@ -53,23 +52,45 @@ class LinkStreamer(TwythonStreamer):
         # Want to stop trying to get data because of the error?
         # Uncomment the next line!
         # self.disconnect()
-    def getPageInfo(self, url):
+    def getPageInfo(self, url, tweet_url, user_id, tweets):
+        link = Link(tweet_url, user_id, tweets)
+        resp = None
         try:
             resp = requests.get(url)
-            soup = BeautifulSoup(resp.text)
-            title = soup.find('title')
-            if title is not None:
-                title = title.text
-            else:
-                title = ''
-            description = soup.find('meta', {'name':'description'})
-            if description is not None:
-                description = description['content']
-            else:
-                description = ''
+            if resp.url:
+                url = resp.url
+            link.url = url
+            link.domain = url.split('/')[2]
         except requests.exceptions.ConnectionError:
             logging.error('ConnectionError for url {0}'.format(url))
-        return (title, description)
+        if resp and resp.status_code < 400:
+            headers = resp.headers
+            if not headers:
+                headers = {'content-type': ''}          
+            if 'text/html' in headers.get('content-type'):     
+                soup = BeautifulSoup(resp.text, convertEntities=BeautifulSoup.HTML_ENTITIES)
+                t = soup.find('title')
+                if t is not None:
+                    link.title = ' '.join(t.renderContents().split())
+                d = soup.find('meta', {'name':'description'})
+                if d is not None:
+                    link.description = ' '.join(d.get('content').split())
+            elif headers.get('content-type') == 'application/pdf':
+                link.title = url
+            elif 'image' in headers.get('content-type'):
+                link.title = url
+                link.description = ''
+                link.heroImageUrl = url
+            if not link.title and link.description:
+                link.title = description
+                link.description = ''
+            elif not link.title and not link.description:
+                link.title = url
+                link.description = ''
+        else:
+            link = None
+
+        return link
 
 
 

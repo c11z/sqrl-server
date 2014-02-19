@@ -21,8 +21,8 @@ class Link(db.Model):
     url = db.Column('Url', db.String(255), index=True)
     twitterUrl = db.Column('TwitterUrl', db.String(255))
     domain = db.Column('Domain', db.String(255), nullable=True)
-    title = db.Column('Title', db.String(255), nullable=True)
-    description = db.Column('Description', db.String(255), nullable=True)
+    title = db.Column('Title', db.String(1024), nullable=True)
+    description = db.Column('Description', db.String(1024), nullable=True)
     heroImageUrl = db.Column('HeroImageUrl', db.String(1024), nullable=True)
     excerpt = db.Column('Excerpt', db.Text, nullable=True)
     createdAt = db.Column('CreatedAt', db.DateTime, index=True)
@@ -31,15 +31,12 @@ class Link(db.Model):
     tweets = db.relationship('Tweet', secondary=tweet_link_conn,
         backref=db.backref('links', lazy='dynamic'))
 
-    def __init__(self, url, twitter_url, user_id, tweets):
-        self.url = url
+    def __init__(self, twitter_url, user_id, tweets):
         self.twitterUrl = twitter_url
         self.userId = user_id
         self.createdAt = datetime.utcnow()
         self.tweets = tweets
-        
-    # def __repr__(self):
-    #     return 'Link {0}:{1}'.format(self.url, self.user_id)
+
 
 class Tweet(db.Model):
     __tablename__ = 'Tweet'
@@ -62,10 +59,6 @@ class Tweet(db.Model):
         self.profileImageUrl = profile_image_url
         self.text = text
         self.createdAt = parser.parse(created_at)
-        # self.created_at = parser.parse(created_at, '%a %b %d %H:%M:%S %z %Y')
-
-    # def __repr__(self):
-    #     return 'Tweet {0}:{1}'.format(self.tweet_id, self.screen_name)
       
 ##### Serializers #####
 
