@@ -13,8 +13,8 @@ gator.jinja_env.globals['static'] = (
     lambda filename: url_for('static', filename = filename)
 )
 import logging
-logging.basicConfig(filename='/var/www/html/gator-server/logs/api.log',level=logging.DEBUG)
-# logging.basicConfig(filename='logs/api.log',level=logging.DEBUG)
+# logging.basicConfig(filename='/var/www/html/gator-server/logs/api.log',level=logging.DEBUG)
+logging.basicConfig(filename='logs/api.log',level=logging.DEBUG)
 logging.info("Starting up Server!")
 from gator import api
 from gator import db
