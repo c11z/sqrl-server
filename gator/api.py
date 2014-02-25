@@ -18,10 +18,14 @@ class LinkBundle(Resource):
     def get(self):
         params = request.args
         # return str(params.get('startDate'))
+        if not params.get('limit'):
+            limit = 200
         if not params.get('startDate'):
-            abort(404, message='Please include the startDate parameter')
+            links = Link.query.order_by(Link.createdAt.desc()).limit(limit).all()
+        else:    
+            # links = Link.query.filter(Link.userId == s.USER_ID, Link.createdAt > params['startDate']).all()
+            links = Link.query.filter(Link.userId == s.USER_ID, Link.createdAt > params['startDate']).order_by(Link.createdAt.desc()).all()
         logging.info('calling linkbundle')
-        links = Link.query.filter(Link.userId == s.USER_ID, Link.createdAt > params['startDate']).all()
         logging.info("{0}".format(links))
         serialized = LinkSerializer(links, many=True)
         # if not user_id or not date:
